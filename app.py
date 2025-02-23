@@ -19,10 +19,21 @@ def save_books(books):
     with open(BOOKS_FILE, "w") as file:
         json.dump(books, file, indent=4)
 
-# GET all books
+# GET all books (with optional filtering by author or genre)
 @app.route('/books', methods=['GET'])
 def get_books():
     books = load_books()
+    
+    # Get query parameters
+    author = request.args.get('author')
+    genre = request.args.get('genre')
+
+    # Apply filters if parameters are provided
+    if author:
+        books = [book for book in books if book["author"].lower() == author.lower()]
+    if genre:
+        books = [book for book in books if book["genre"].lower() == genre.lower()]
+
     return jsonify(books)
 
 # POST: Add a new book
