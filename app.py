@@ -1,5 +1,6 @@
 import json
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
+from collections import OrderedDict
 
 app = Flask(__name__)
 
@@ -34,7 +35,19 @@ def get_books():
     if genre:
         books = [book for book in books if book["genre"].lower() == genre.lower()]
 
-    return jsonify(books)
+    # Ensure all books maintain correct field order
+    ordered_books = [
+        OrderedDict([
+            ("id", book["id"]),
+            ("title", book["title"]),
+            ("author", book["author"]),
+            ("genre", book["genre"])
+        ])
+        for book in books
+    ]
+
+    # Manually serialize to JSON to ensure correct order
+    return Response(json.dumps(ordered_books, ensure_ascii=False), mimetype="application/json")
 
 # POST: Add a new book
 @app.route('/books', methods=['POST'])
@@ -53,16 +66,24 @@ def add_book():
     
     return jsonify(new_book), 201
 
-# ✅ GET a specific book by ID (Move this ABOVE `if __name__ == '__main__'`)
+# GET a specific book by ID 
 @app.route('/books/<int:book_id>', methods=['GET'])
 def get_book(book_id):
     books = load_books()
     book = next((b for b in books if b["id"] == book_id), None)
-    
+
     if book:
-        return jsonify(book)
-    
-    return jsonify({"error": "Book not found"}), 404
+        ordered_book = OrderedDict([
+            ("id", book["id"]),
+            ("title", book["title"]),
+            ("author", book["author"]),
+            ("genre", book["genre"])
+        ])
+
+        # Manually serialize to JSON to ensure correct order
+        return Response(json.dumps(ordered_book, ensure_ascii=False), mimetype="application/json")
+
+    return Response(json.dumps({"error": "Book not found"}, ensure_ascii=False), mimetype="application/json", status=404)
 
 # PUT: Update a book by ID
 @app.route('/books/<int:book_id>', methods=['PUT'])
